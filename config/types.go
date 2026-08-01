@@ -38,6 +38,37 @@ const (
 	TTLAuto  CloudflareDDNSTTL = "auto"
 )
 
+func (t CloudflareDDNSTTL) GetValue() int {
+	switch t {
+	case TTL1Min:
+		return 60
+	case TTL2Min:
+		return 120
+	case TTL5Min:
+		return 300
+	case TTL10Min:
+		return 600
+	case TTL15Min:
+		return 900
+	case TTL30Min:
+		return 1800
+	case TTL1H:
+		return 3600
+	case TTL2H:
+		return 7200
+	case TTL5H:
+		return 18000
+	case TTL12H:
+		return 43200
+	case TTL1D:
+		return 86400
+	case TTLAuto:
+		return 1
+	default:
+		return 1
+	}
+}
+
 // Returns all valid TTL values
 func GetSupportedTTLs() []CloudflareDDNSTTL {
 	return []CloudflareDDNSTTL{

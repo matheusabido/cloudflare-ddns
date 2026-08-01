@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+// Updates the config file to reflect the new IP addresses. The rest is unchanged to preserve comments.
+// It returns an error if it fails to read or write the file.
 func UpdateConfigIP(config *CloudflareDDNSConfig) error {
 	configurationPath := GetConfigPath()
 	file, err := os.OpenFile(configurationPath, os.O_RDWR, 0640)

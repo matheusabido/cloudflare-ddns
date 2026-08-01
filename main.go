@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/matheusabido/cloudflare-ddns/config"
+	"github.com/matheusabido/cloudflare-ddns/tools"
 	"github.com/matheusabido/cloudflare-ddns/utils"
 )
 
@@ -28,7 +29,11 @@ func main() {
 	fmt.Printf("Fetched IPs in %s. Total: %s\n", time.Since(startFetching), time.Since(start))
 
 	if ipChanged {
-		// save new config
+		cloudflare := tools.NewCloudflareClient(ddns)
+		if err := cloudflare.UpdateRecords(); err != nil {
+			fmt.Printf("Error updating records: %v\n", err)
+		}
+
 		if err := config.UpdateConfigIP(ddns); err != nil {
 			fmt.Printf("Error updating config: %v\n", err)
 		}
