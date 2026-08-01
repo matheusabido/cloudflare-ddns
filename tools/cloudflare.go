@@ -114,37 +114,37 @@ func (c *CloudflareClient) CreateRecord(record *types.CloudflareDDNSRecord) erro
 		"name":    strings.TrimSpace(record.Name),
 		"ttl":     record.TTL.GetValue(),
 		"type":    string(record.Type),
-		"content": record.Value,
+		"content": strings.TrimSpace(record.Value),
 		"proxied": record.Proxied,
 	}
 
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		return fmt.Errorf("Could not marshal create record body. %v", err)
+		return fmt.Errorf("could not marshal create record body. %v", err)
 	}
 
 	buffer := bytes.NewBuffer(bodyBytes)
 	request, err := http.NewRequest("POST", c.baseURL+"/dns_records", buffer)
 	if err != nil {
-		return fmt.Errorf("Error while trying to create request to list cloudflare records: %v", err)
+		return fmt.Errorf("error while trying to create request to list cloudflare records: %v", err)
 	}
 
 	request.Header.Set("Authorization", "Bearer "+c.config.APIToken)
 
 	resp, err := c.client.Do(request)
 	if err != nil {
-		return fmt.Errorf("Could not create record on Cloudflare: %v", err)
+		return fmt.Errorf("could not create record on Cloudflare: %v", err)
 	}
 	defer resp.Body.Close()
 
 	responseBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("Could not read create record response body: %v", err)
+		return fmt.Errorf("could not read create record response body: %v", err)
 	}
 
 	var response types.CloudflareCreateRecordResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return fmt.Errorf("Error while trying to parse create record response: %v", err)
+		return fmt.Errorf("error while trying to parse create record response: %v", err)
 	}
 
 	if !response.Success {
@@ -153,75 +153,45 @@ func (c *CloudflareClient) CreateRecord(record *types.CloudflareDDNSRecord) erro
 	return nil
 }
 
-/*
-	curl https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records/$DNS_RECORD_ID \
-	    -X PUT \
-	    -H 'Content-Type: application/json' \
-	    -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-	    -d '{
-	          "name": "example.com",
-	          "ttl": 3600,
-	          "type": "A",
-	          "comment": "Domain verification record",
-	          "content": "198.51.100.4",
-	          "private_routing": true,
-	          "proxied": true
-	        }'
-
-			{
-	  "errors": [
-	    {
-	      "code": 1000,
-	      "message": "message",
-	      "documentation_url": "documentation_url",
-	      "source": {
-	        "pointer": "pointer"
-	      }
-	    }
-	  ],
-	  "messages": [
-	    {
-	      "code": 1000,
-	      "message": "message",
-	      "documentation_url": "documentation_url",
-	      "source": {
-	        "pointer": "pointer"
-	      }
-	    }
-	  ],
-	  "success": true,
-	  "result": {
-	    "name": "example.com",
-	    "ttl": 3600,
-	    "type": "A",
-	    "comment": "Domain verification record",
-	    "content": "198.51.100.4",
-	    "private_routing": true,
-	    "proxied": true,
-	    "settings": {
-	      "ipv4_only": true,
-	      "ipv6_only": true
-	    },
-	    "tags": [
-	      "owner:dns-team"
-	    ],
-	    "id": "023e105f4ecef8ad9ca31a8372d0c353",
-	    "created_on": "2014-01-01T05:20:00.12345Z",
-	    "meta": {
-	      "dead_glue": true,
-	      "is_glue": true,
-	      "shadowed_by": [
-	        "372e67954025e0ba6aaa6d586b9e0b59"
-	      ],
-	      "shadowed_records_count": 42
-	    },
-	    "modified_on": "2014-01-01T05:20:00.12345Z",
-	    "proxiable": true,
-	    "comment_modified_on": "2024-01-01T05:20:00.12345Z",
-	    "tags_modified_on": "2025-01-01T05:20:00.12345Z"
-	  }
-	}
-*/
+// Updates an existing DNS record on Cloudflare with the provided ID and CloudflareDDNSRecord.
+// Returns an error if the update fails.
 func (c *CloudflareClient) OverwriteRecord(id string, record *types.CloudflareDDNSRecord) error {
+	body := map[string]any{
+		"name":    strings.TrimSpace(record.Name),
+		"ttl":     record.TTL.GetValue(),
+		"type":    string(record.Type),
+		"content": strings.TrimSpace(record.Value),
+		"proxied": record.Proxied,
+	}
+
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("could not marshal overwrite record body. %v", err)
+	}
+
+	buffer := bytes.NewBuffer(bodyBytes)
+	request, err := http.NewRequest("PUT", c.baseURL+"/dns_records/"+id, buffer)
+
+	request.Header.Set("Authorization", "Bearer "+c.config.APIToken)
+
+	resp, err := c.client.Do(request)
+	if err != nil {
+		return fmt.Errorf("could not overwrite record on Cloudflare: %v", err)
+	}
+	defer resp.Body.Close()
+
+	responseBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("could not read overwrite record response body: %v", err)
+	}
+
+	var response types.CloudflareCreateRecordResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return fmt.Errorf("error while trying to parse overwrite record response: %v", err)
+	}
+
+	if !response.Success {
+		return fmt.Errorf("could not overwrite cloudflare record. Response: %s", string(responseBytes))
+	}
 	return nil
 }
