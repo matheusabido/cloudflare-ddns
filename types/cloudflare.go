@@ -1,6 +1,6 @@
 package types
 
-type CloudflareListRecordsResult struct {
+type CloudflareRecord struct {
 	ID         string                 `json:"id"`
 	Name       string                 `json:"name"`
 	Type       string                 `json:"type"`
@@ -34,9 +34,16 @@ type CloudflareResultInfo struct {
 }
 
 type CloudflareListRecordsResponse struct {
-	Result     []CloudflareListRecordsResult `json:"result"`
-	Success    bool                          `json:"success"`
-	Errors     []CloudflareErrors            `json:"errors"`
-	Messages   []string                      `json:"messages"`
-	ResultInfo CloudflareResultInfo          `json:"result_info"`
+	Result     []CloudflareRecord   `json:"result"`
+	Success    bool                 `json:"success"`
+	Errors     []CloudflareErrors   `json:"errors"`
+	Messages   []CloudflareErrors   `json:"messages"`
+	ResultInfo CloudflareResultInfo `json:"result_info"`
+}
+
+type CloudflareCreateRecordResponse struct {
+	Errors   []CloudflareErrors `json:"errors"`
+	Messages []CloudflareErrors `json:"messages"`
+	Success  bool               `json:"success"`
+	Result   CloudflareRecord   `json:"result"`
 }
