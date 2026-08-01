@@ -29,6 +29,9 @@ func main() {
 
 	if ipChanged {
 		// save new config
+		if err := config.UpdateConfigIP(ddns); err != nil {
+			fmt.Printf("Error updating config: %v\n", err)
+		}
 	}
 
 	fmt.Println("Done in", time.Since(start))
@@ -45,9 +48,9 @@ func FetchIP(ddns *config.CloudflareDDNSConfig) bool {
 		}
 
 		if ipv4 != ddns.LastIPv4 {
+			fmt.Printf("IPv4 has changed from \"%s\" to \"%s\"\n", ddns.LastIPv4, ipv4)
 			ddns.LastIPv4 = ipv4
 			ipChanged = true
-			fmt.Printf("IPv4 has changed from %s to %s\n", ddns.LastIPv4, ipv4)
 		}
 	}
 
@@ -58,9 +61,9 @@ func FetchIP(ddns *config.CloudflareDDNSConfig) bool {
 		}
 
 		if ipv6 != ddns.LastIPv6 {
+			fmt.Printf("IPv6 has changed from \"%s\" to \"%s\"\n", ddns.LastIPv6, ipv6)
 			ddns.LastIPv6 = ipv6
 			ipChanged = true
-			fmt.Printf("IPv6 has changed from %s to %s\n", ddns.LastIPv6, ipv6)
 		}
 	}
 	return ipChanged

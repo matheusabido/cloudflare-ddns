@@ -25,32 +25,24 @@ func ReadConfigFile() []string {
 
 	lines := make([]string, 0)
 
-	bytes, err := reader.ReadBytes('\n')
-	for err == nil || err == io.EOF {
-		value := strings.TrimSpace(string(bytes))
-		if strings.HasPrefix(value, "#") || value == "" {
-			if err == io.EOF {
-				break
-			}
-			bytes, err = reader.ReadBytes('\n')
+	var line string
+	for err != io.EOF {
+		line, err = reader.ReadString('\n')
+		if err != nil && err != io.EOF {
+			log.Panicf("An error occurred while reading %s", configurationPath)
+		}
+
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
 
-		index := strings.Index(value, "#")
+		index := strings.Index(line, "#")
 		if index != -1 {
-			value = value[:index]
+			line = line[:index]
 		}
 
-		lines = append(lines, value)
-
-		if err == io.EOF {
-			break
-		}
-		bytes, err = reader.ReadBytes('\n')
-	}
-
-	if err != io.EOF {
-		log.Panicf("An error occurred while reading the %s file", configurationPath)
+		lines = append(lines, line)
 	}
 	return lines
 }
