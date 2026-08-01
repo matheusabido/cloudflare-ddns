@@ -9,14 +9,14 @@ import (
 	"strings"
 )
 
-// ReadConfigFile reads or creates the configuration file on the path determined by GetConfigPath()
+// ReadConfigFile reads the configuration file on the path determined by GetConfigPath()
 // it returns a slice of strings containing the lines of the configuration file,
 // ignoring comments and empty lines. It panics on failure to open or read the file.
 func ReadConfigFile() []string {
 	configurationPath := GetConfigPath()
-	file, err := os.OpenFile(configurationPath, os.O_RDWR|os.O_CREATE, 0640)
+	file, err := os.OpenFile(configurationPath, os.O_RDWR, 0640)
 	if err != nil {
-		log.Panicf("Could not open %s. Check if this program has the correct permissions.", configurationPath)
+		log.Panicf("Could not open %s. Check if the file exists and this program has the correct permissions.", configurationPath)
 	}
 	defer file.Close()
 
