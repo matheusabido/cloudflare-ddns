@@ -6,6 +6,7 @@ import (
 
 	"github.com/matheusabido/cloudflare-ddns/config"
 	"github.com/matheusabido/cloudflare-ddns/tools"
+	"github.com/matheusabido/cloudflare-ddns/types"
 	"github.com/matheusabido/cloudflare-ddns/utils"
 )
 
@@ -44,7 +45,7 @@ func main() {
 
 // FetchIP fetches the current active IP addresses
 // It also checks if they have changed compared to the last known values and updates the config (in memory) accordingly
-func FetchIP(ddns *config.CloudflareDDNSConfig) bool {
+func FetchIP(ddns *types.CloudflareDDNSConfig) bool {
 	ipChanged := false
 	if utils.IsActive(ddns.LastIPv4) {
 		ipv4, err := utils.GetIP(utils.NetworkTypeIPv4)

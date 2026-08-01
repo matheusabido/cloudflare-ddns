@@ -1,4 +1,4 @@
-package config
+package types
 
 import (
 	"fmt"
@@ -125,7 +125,7 @@ func NewConfig() *CloudflareDDNSConfig {
 
 // Key: supported record type
 // Value: record types incompatible with the key record type
-var conflictiveTypes = map[CloudflareDDNSRecordType][]CloudflareDDNSRecordType{
+var ConflictiveTypes = map[CloudflareDDNSRecordType][]CloudflareDDNSRecordType{
 	RecordTypeA:     {RecordTypeCNAME},
 	RecordTypeAAAA:  {RecordTypeCNAME},
 	RecordTypeCNAME: {RecordTypeA, RecordTypeAAAA},
@@ -139,7 +139,7 @@ func (c *CloudflareDDNSConfig) AddRecord(record *CloudflareDDNSRecord) error {
 	}
 
 	for _, current := range c.Records {
-		if current.Name == record.Name && slices.Contains(conflictiveTypes[current.Type], record.Type) {
+		if current.Name == record.Name && slices.Contains(ConflictiveTypes[current.Type], record.Type) {
 			return fmt.Errorf("conflictive record types for name %s: %s and %s", record.Name, current.Type, record.Type)
 		}
 	}

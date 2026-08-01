@@ -1,4 +1,4 @@
-package tools
+package types
 
 type CloudflareListRecordsResult struct {
 	ID         string                 `json:"id"`

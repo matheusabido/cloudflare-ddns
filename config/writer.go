@@ -6,11 +6,13 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"github.com/matheusabido/cloudflare-ddns/types"
 )
 
 // Updates the config file to reflect the new IP addresses. The rest is unchanged to preserve comments.
 // It returns an error if it fails to read or write the file.
-func UpdateConfigIP(config *CloudflareDDNSConfig) error {
+func UpdateConfigIP(config *types.CloudflareDDNSConfig) error {
 	configurationPath := GetConfigPath()
 	file, err := os.OpenFile(configurationPath, os.O_RDWR, 0640)
 	if err != nil {

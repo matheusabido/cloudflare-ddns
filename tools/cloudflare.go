@@ -5,18 +5,19 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"time"
 
-	"github.com/matheusabido/cloudflare-ddns/config"
+	"github.com/matheusabido/cloudflare-ddns/types"
 )
 
 type CloudflareClient struct {
-	config  *config.CloudflareDDNSConfig
+	config  *types.CloudflareDDNSConfig
 	client  *http.Client
 	baseURL string
 }
 
-func NewCloudflareClient(config *config.CloudflareDDNSConfig) *CloudflareClient {
+func NewCloudflareClient(config *types.CloudflareDDNSConfig) *CloudflareClient {
 	client := &http.Client{
 		Timeout: 30 * time.Second,
 	}
@@ -31,19 +32,50 @@ func NewCloudflareClient(config *config.CloudflareDDNSConfig) *CloudflareClient 
 // UpdateRecords updates the DNS records in Cloudflare based on the current configuration.
 // Returns an error if the update fails.
 func (c *CloudflareClient) UpdateRecords() error {
-	records, err := c.ListRecords()
+	recordsList, err := c.ListRecords()
 	if err != nil {
 		return err
 	}
 
-	v, _ := json.Marshal(records)
-	fmt.Println(string(v))
+	for _, record := range c.config.Records {
+		conflictiveTypes := types.ConflictiveTypes[record.Type]
+		equivalentId := ""
+		hasConflict := false
+
+		for _, cfRecord := range recordsList.Result {
+			isEquivalent := record.Name == cfRecord.Name && record.Type == types.CloudflareDDNSRecordType(cfRecord.Type)
+			if isEquivalent {
+				equivalentId = cfRecord.ID
+				continue
+			}
+
+			if slices.Contains(conflictiveTypes, types.CloudflareDDNSRecordType(cfRecord.Type)) {
+				fmt.Printf("Found conflictive record on Cloudflare: [%s %s] with ID: %s\n", cfRecord.Type, cfRecord.Name, cfRecord.ID)
+				hasConflict = true
+				break
+			}
+		}
+		if hasConflict {
+			fmt.Printf("DDNS Record has conflicts with existing Cloudflare records. Skipping it. [%s %s]", record.Type, record.Name)
+			continue
+		}
+
+		if equivalentId != "" {
+			if err := c.OverwriteRecord(equivalentId, record); err != nil {
+				return err
+			}
+		} else {
+			if err := c.CreateRecord(record); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
 // ListRecords fetches the list of DNS records from Cloudflare for the configured zone.
 // Returns a CloudflareListRecordsResponse containing the records and any errors encountered.
-func (c *CloudflareClient) ListRecords() (*CloudflareListRecordsResponse, error) {
+func (c *CloudflareClient) ListRecords() (*types.CloudflareListRecordsResponse, error) {
 	request, err := http.NewRequest("GET", c.baseURL+"/dns_records?per_page=5000000", nil)
 	if err != nil {
 		return nil, fmt.Errorf("Error while trying to create request to list cloudflare records: %v", err)
@@ -61,7 +93,7 @@ func (c *CloudflareClient) ListRecords() (*CloudflareListRecordsResponse, error)
 		return nil, fmt.Errorf("Error while trying to read record list response: %v", err)
 	}
 
-	var response CloudflareListRecordsResponse
+	var response types.CloudflareListRecordsResponse
 	if err := json.Unmarshal(content, &response); err != nil {
 		return nil, fmt.Errorf("Error while trying to parse record list response: %v", err)
 	}
@@ -137,8 +169,8 @@ func (c *CloudflareClient) ListRecords() (*CloudflareListRecordsResponse, error)
 	          "proxied": true
 	        }'
 */
-func (c *CloudflareClient) CreateRecord() {
-
+func (c *CloudflareClient) CreateRecord(record *types.CloudflareDDNSRecord) error {
+	return nil
 }
 
 /*
@@ -210,6 +242,6 @@ func (c *CloudflareClient) CreateRecord() {
 	  }
 	}
 */
-func (c *CloudflareClient) OverwriteRecord() {
-
+func (c *CloudflareClient) OverwriteRecord(id string, record *types.CloudflareDDNSRecord) error {
+	return nil
 }

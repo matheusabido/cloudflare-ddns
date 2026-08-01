@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/matheusabido/cloudflare-ddns/types"
 	"github.com/matheusabido/cloudflare-ddns/utils"
 )
 
 // Parses the config and returns a CloudflareDDNSConfig instance.
 // It returns a slice of errors if any errors were found during parsing.
-func ParseConfig(lines []string) (*CloudflareDDNSConfig, []error) {
-	config := NewConfig()
+func ParseConfig(lines []string) (*types.CloudflareDDNSConfig, []error) {
+	config := types.NewConfig()
 
 	errors := make([]error, 0)
 	for _, line := range lines {
@@ -50,15 +51,15 @@ func ParseConfig(lines []string) (*CloudflareDDNSConfig, []error) {
 
 // Parses a record line and returns a CloudflareDDNSRecord instance.
 // It returns an error if the line is incorrectly configured.
-func ParseRecord(line string) (*CloudflareDDNSRecord, error) {
+func ParseRecord(line string) (*types.CloudflareDDNSRecord, error) {
 	parts := strings.Split(line, ",")
 	if len(parts) < 3 {
 		return nil, fmt.Errorf("invalid record line: %s. Incomplete record config. Use: record=type,name,value,ttl?,proxied?", line)
 	}
 
-	recordType := CloudflareDDNSRecordType(parts[0])
+	recordType := types.CloudflareDDNSRecordType(parts[0])
 	if !recordType.IsValid() {
-		return nil, fmt.Errorf("invalid record type: %s. Supported types: %s", parts[0], GetSupportedRecordTypes())
+		return nil, fmt.Errorf("invalid record type: %s. Supported types: %s", parts[0], types.GetSupportedRecordTypes())
 	}
 
 	proxied := true
@@ -66,15 +67,15 @@ func ParseRecord(line string) (*CloudflareDDNSRecord, error) {
 		proxied = utils.IsActive(parts[3])
 	}
 
-	ttl := TTLAuto
+	ttl := types.TTLAuto
 	if len(parts) >= 5 {
-		ttl = CloudflareDDNSTTL(parts[4])
+		ttl = types.CloudflareDDNSTTL(parts[4])
 		if !ttl.IsValid() {
-			return nil, fmt.Errorf("invalid TTL: %s. Supported values: %s", parts[4], GetSupportedTTLs())
+			return nil, fmt.Errorf("invalid TTL: %s. Supported values: %s", parts[4], types.GetSupportedTTLs())
 		}
 	}
 
-	return &CloudflareDDNSRecord{
+	return &types.CloudflareDDNSRecord{
 		Type:    recordType,
 		Name:    parts[1],
 		Value:   parts[2],
