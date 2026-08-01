@@ -110,11 +110,14 @@ func (c *CloudflareClient) ListRecords() (*types.CloudflareListRecordsResponse, 
 // Creates a record on Cloudflare based on the provided CloudflareDDNSRecord.
 // Returns an error if the creation fails.
 func (c *CloudflareClient) CreateRecord(record *types.CloudflareDDNSRecord) error {
+	recordValue := strings.TrimSpace(record.Value)
+	recordValue = strings.ReplaceAll(recordValue, "{public_ipv4}", c.config.LastIPv4)
+	recordValue = strings.ReplaceAll(recordValue, "{public_ipv6}", c.config.LastIPv6)
 	body := map[string]any{
 		"name":    strings.TrimSpace(record.Name),
 		"ttl":     record.TTL.GetValue(),
 		"type":    string(record.Type),
-		"content": strings.TrimSpace(record.Value),
+		"content": recordValue,
 		"proxied": record.Proxied,
 	}
 
@@ -156,11 +159,14 @@ func (c *CloudflareClient) CreateRecord(record *types.CloudflareDDNSRecord) erro
 // Updates an existing DNS record on Cloudflare with the provided ID and CloudflareDDNSRecord.
 // Returns an error if the update fails.
 func (c *CloudflareClient) OverwriteRecord(id string, record *types.CloudflareDDNSRecord) error {
+	recordValue := strings.TrimSpace(record.Value)
+	recordValue = strings.ReplaceAll(recordValue, "{public_ipv4}", c.config.LastIPv4)
+	recordValue = strings.ReplaceAll(recordValue, "{public_ipv6}", c.config.LastIPv6)
 	body := map[string]any{
 		"name":    strings.TrimSpace(record.Name),
 		"ttl":     record.TTL.GetValue(),
 		"type":    string(record.Type),
-		"content": strings.TrimSpace(record.Value),
+		"content": recordValue,
 		"proxied": record.Proxied,
 	}
 
