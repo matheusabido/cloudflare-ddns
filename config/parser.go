@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 	"strings"
+
+	"github.com/matheusabido/cloudflare-ddns/utils"
 )
 
 // Parses the config and returns a CloudflareDDNSConfig instance.
@@ -61,7 +63,7 @@ func ParseRecord(line string) (*CloudflareDDNSRecord, error) {
 
 	proxied := true
 	if len(parts) >= 4 {
-		proxied = parts[3] != "false" && parts[3] != "no"
+		proxied = utils.IsActive(parts[3])
 	}
 
 	ttl := TTLAuto

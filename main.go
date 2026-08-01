@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/matheusabido/cloudflare-ddns/config"
+	"github.com/matheusabido/cloudflare-ddns/utils"
 )
 
 func main() {
@@ -22,5 +23,45 @@ func main() {
 	}
 	fmt.Printf("Parsed config in %s. Total: %s\n", time.Since(startParsing), time.Since(start))
 
-	fmt.Println(ddns)
+	startFetching := time.Now()
+	ipChanged := FetchIP(ddns)
+	fmt.Printf("Fetched IPs in %s. Total: %s\n", time.Since(startFetching), time.Since(start))
+
+	if ipChanged {
+		// save new config
+	}
+
+	fmt.Println("Done in", time.Since(start))
+}
+
+// FetchIP fetches the current active IP addresses
+// It also checks if they have changed compared to the last known values and updates the config (in memory) accordingly
+func FetchIP(ddns *config.CloudflareDDNSConfig) bool {
+	ipChanged := false
+	if utils.IsActive(ddns.LastIPv4) {
+		ipv4, err := utils.GetIP(utils.NetworkTypeIPv4)
+		if err != nil {
+			fmt.Printf("Error getting IPv4: %v\n", err)
+		}
+
+		if ipv4 != ddns.LastIPv4 {
+			ddns.LastIPv4 = ipv4
+			ipChanged = true
+			fmt.Printf("IPv4 has changed from %s to %s\n", ddns.LastIPv4, ipv4)
+		}
+	}
+
+	if utils.IsActive(ddns.LastIPv6) {
+		ipv6, err := utils.GetIP(utils.NetworkTypeIPv6)
+		if err != nil {
+			fmt.Printf("Error getting IPv6: %v\n", err)
+		}
+
+		if ipv6 != ddns.LastIPv6 {
+			ddns.LastIPv6 = ipv6
+			ipChanged = true
+			fmt.Printf("IPv6 has changed from %s to %s\n", ddns.LastIPv6, ipv6)
+		}
+	}
+	return ipChanged
 }
