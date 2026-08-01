@@ -34,12 +34,19 @@ func NewCloudflareClient(config *types.CloudflareDDNSConfig) *CloudflareClient {
 // UpdateRecords updates the DNS records in Cloudflare based on the current configuration.
 // Returns an error if the update fails.
 func (c *CloudflareClient) UpdateRecords() error {
+	start := time.Now()
 	recordsList, err := c.ListRecords()
 	if err != nil {
 		return err
 	}
+	fmt.Printf("Listed cloudflare records in %s\n", time.Since(start))
 
+	startUpdate := time.Now()
+	fmt.Println("Updating cloudflare...")
 	for _, record := range c.config.Records {
+		startConflict := time.Now()
+		fmt.Printf("Checking for conflicts for %s %s...", record.Type, record.Name)
+
 		conflictiveTypes := types.ConflictiveTypes[record.Type]
 		equivalentId := ""
 		hasConflict := false
@@ -57,21 +64,27 @@ func (c *CloudflareClient) UpdateRecords() error {
 				break
 			}
 		}
+		fmt.Printf("Checked for conflicts in %s\n", time.Since(startConflict))
+
 		if hasConflict {
 			fmt.Printf("DDNS Record has conflicts with existing Cloudflare records. Skipping it. [%s %s]", record.Type, record.Name)
 			continue
 		}
 
+		startRecord := time.Now()
 		if equivalentId != "" {
 			if err := c.OverwriteRecord(equivalentId, record); err != nil {
 				return err
 			}
+			fmt.Printf("Overwrote %s %s in %s\n", record.Type, record.Name, time.Since(startRecord))
 		} else {
 			if err := c.CreateRecord(record); err != nil {
 				return err
 			}
+			fmt.Printf("Created %s %s in %s\n", record.Type, record.Name, time.Since(startRecord))
 		}
 	}
+	fmt.Printf("Cloudflare update done in %s\n", time.Since(startUpdate))
 	return nil
 }
 

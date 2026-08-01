@@ -1,7 +1,9 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/matheusabido/cloudflare-ddns/config"
@@ -11,6 +13,8 @@ import (
 )
 
 func main() {
+	forceUpdate := flag.Bool("force", false, "Forces update regardless of the ip having changed")
+
 	start := time.Now()
 	lines := config.ReadConfigFile()
 	fmt.Printf("Read config in %s\n", time.Since(start))
@@ -26,10 +30,13 @@ func main() {
 	fmt.Printf("Parsed config in %s. Total: %s\n", time.Since(startParsing), time.Since(start))
 
 	startFetching := time.Now()
-	ipChanged := FetchIP(ddns)
+	ipChanged, err := FetchIP(ddns)
+	if err != nil {
+		log.Panicf("could not fetch IP. %v", err)
+	}
 	fmt.Printf("Fetched IPs in %s. Total: %s\n", time.Since(startFetching), time.Since(start))
 
-	if ipChanged {
+	if ipChanged || *forceUpdate {
 		cloudflare := tools.NewCloudflareClient(ddns)
 		if err := cloudflare.UpdateRecords(); err != nil {
 			fmt.Printf("Error updating records: %v\n", err)
@@ -45,12 +52,12 @@ func main() {
 
 // FetchIP fetches the current active IP addresses
 // It also checks if they have changed compared to the last known values and updates the config (in memory) accordingly
-func FetchIP(ddns *types.CloudflareDDNSConfig) bool {
+func FetchIP(ddns *types.CloudflareDDNSConfig) (bool, error) {
 	ipChanged := false
 	if utils.IsActive(ddns.LastIPv4) {
 		ipv4, err := utils.GetIP(utils.NetworkTypeIPv4)
 		if err != nil {
-			fmt.Printf("Error getting IPv4: %v\n", err)
+			return false, fmt.Errorf("Error getting IPv4: %v\n", err)
 		}
 
 		if ipv4 != ddns.LastIPv4 {
@@ -63,7 +70,7 @@ func FetchIP(ddns *types.CloudflareDDNSConfig) bool {
 	if utils.IsActive(ddns.LastIPv6) {
 		ipv6, err := utils.GetIP(utils.NetworkTypeIPv6)
 		if err != nil {
-			fmt.Printf("Error getting IPv6: %v\n", err)
+			return false, fmt.Errorf("Error getting IPv6: %v\n", err)
 		}
 
 		if ipv6 != ddns.LastIPv6 {
@@ -72,5 +79,5 @@ func FetchIP(ddns *types.CloudflareDDNSConfig) bool {
 			ipChanged = true
 		}
 	}
-	return ipChanged
+	return ipChanged, nil
 }
