@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -49,5 +50,11 @@ func GetIP(network NetworkType) (string, error) {
 		return "", err
 	}
 
-	return strings.TrimSpace(string(body)), nil
+	ip := strings.TrimSpace(string(body))
+
+	if ip == "" {
+		return "", fmt.Errorf("could not fetch IP address, response body is empty")
+	}
+
+	return ip, nil
 }
