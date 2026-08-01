@@ -45,7 +45,7 @@ func (c *CloudflareClient) UpdateRecords() error {
 	fmt.Println("Updating cloudflare...")
 	for _, record := range c.config.Records {
 		startConflict := time.Now()
-		fmt.Printf("Checking for conflicts for %s %s...", record.Type, record.Name)
+		fmt.Printf("Checking for conflicts for %s %s...\n", record.Type, record.Name)
 
 		conflictiveTypes := types.ConflictiveTypes[record.Type]
 		equivalentId := ""
