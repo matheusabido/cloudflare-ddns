@@ -41,6 +41,13 @@ func (c *CloudflareClient) UpdateRecords() error {
 	}
 	fmt.Printf("Listed cloudflare records in %s\n", time.Since(start))
 
+	startDetails := time.Now()
+	zoneDetails, err := c.GetZoneDetails()
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Fetched cloudflare zone details in %s\n", time.Since(startDetails))
+
 	startUpdate := time.Now()
 	fmt.Println("Updating cloudflare...")
 	for _, record := range c.config.Records {
@@ -51,8 +58,9 @@ func (c *CloudflareClient) UpdateRecords() error {
 		equivalentId := ""
 		hasConflict := false
 
+		recordName := record.ParseName(zoneDetails.Result.Name)
 		for _, cfRecord := range recordsList.Result {
-			isEquivalent := record.Name == cfRecord.Name && record.Type == types.CloudflareDDNSRecordType(cfRecord.Type)
+			isEquivalent := recordName == cfRecord.Name && record.Type == types.CloudflareDDNSRecordType(cfRecord.Type)
 			if isEquivalent {
 				equivalentId = cfRecord.ID
 				continue
@@ -117,6 +125,38 @@ func (c *CloudflareClient) ListRecords() (*types.CloudflareListRecordsResponse, 
 		return nil, fmt.Errorf("could not list cloudflare records. Response: %s", string(responseBytes))
 	}
 
+	return &response, nil
+}
+
+// Fetches the details of the configured Cloudflare zone.
+// Returns a CloudflareZoneDetails containing the zone information and any errors encountered.
+func (c *CloudflareClient) GetZoneDetails() (*types.CloudflareZoneDetails, error) {
+	request, err := http.NewRequest("GET", c.baseURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("Error while trying to create request to get cloudflare zone details: %v", err)
+	}
+
+	request.Header.Set("Authorization", "Bearer "+c.config.APIToken)
+
+	resp, err := c.client.Do(request)
+	if err != nil {
+		return nil, fmt.Errorf("Error while trying to fetch cloudflare zone details: %v", err)
+	}
+	defer resp.Body.Close()
+
+	responseBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("Error while trying to read zone details response: %v", err)
+	}
+
+	var response types.CloudflareZoneDetails
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return nil, fmt.Errorf("Error while trying to parse zone details response: %v", err)
+	}
+
+	if !response.Success {
+		return nil, fmt.Errorf("could not get cloudflare zone details. Response: %s", string(responseBytes))
+	}
 	return &response, nil
 }
 

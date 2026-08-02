@@ -21,6 +21,13 @@ type CloudflareDDNSRecord struct {
 	TTL     CloudflareDDNSTTL
 }
 
+func (c *CloudflareDDNSRecord) ParseName(zoneName string) any {
+	if c.Name == "@" {
+		return zoneName
+	}
+	return fmt.Sprintf("%s.%s", c.Name, zoneName)
+}
+
 type CloudflareDDNSTTL string
 
 const (

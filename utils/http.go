@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/matheusabido/cloudflare-ddns/types"
 )
 
 type NetworkType string
@@ -23,7 +25,7 @@ func GetIP(network NetworkType) (string, error) {
 	transport := &http.Transport{
 		DialContext: func(ctx context.Context, _, addr string) (net.Conn, error) {
 			d := &net.Dialer{Timeout: 5 * time.Second}
-			return d.DialContext(ctx, string(network), addr) // "tcp4" ou "tcp6"
+			return d.DialContext(ctx, string(network), addr)
 		},
 	}
 
@@ -57,4 +59,36 @@ func GetIP(network NetworkType) (string, error) {
 	}
 
 	return ip, nil
+}
+
+// FetchIP fetches the current active IP addresses
+// It also checks if they have changed compared to the last known values and updates the config (in memory) accordingly
+func FetchIP(ddns *types.CloudflareDDNSConfig) (bool, error) {
+	ipChanged := false
+	if IsActive(ddns.LastIPv4) {
+		ipv4, err := GetIP(NetworkTypeIPv4)
+		if err != nil {
+			return false, fmt.Errorf("Error getting IPv4: %v\n", err)
+		}
+
+		if ipv4 != ddns.LastIPv4 {
+			fmt.Printf("IPv4 has changed from \"%s\" to \"%s\"\n", ddns.LastIPv4, ipv4)
+			ddns.LastIPv4 = ipv4
+			ipChanged = true
+		}
+	}
+
+	if IsActive(ddns.LastIPv6) {
+		ipv6, err := GetIP(NetworkTypeIPv6)
+		if err != nil {
+			return false, fmt.Errorf("Error getting IPv6: %v\n", err)
+		}
+
+		if ipv6 != ddns.LastIPv6 {
+			fmt.Printf("IPv6 has changed from \"%s\" to \"%s\"\n", ddns.LastIPv6, ipv6)
+			ddns.LastIPv6 = ipv6
+			ipChanged = true
+		}
+	}
+	return ipChanged, nil
 }

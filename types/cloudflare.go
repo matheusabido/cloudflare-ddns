@@ -33,6 +33,19 @@ type CloudflareResultInfo struct {
 	TotalPages int `json:"total_pages"`
 }
 
+type CloudflareZone struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	// there's a bunch more, but i don't need them for now
+}
+
+type CloudflareZoneDetails struct {
+	Errors   []CloudflareErrors `json:"errors"`
+	Messages []CloudflareErrors `json:"messages"`
+	Success  bool               `json:"success"`
+	Result   CloudflareZone     `json:"result"`
+}
+
 type CloudflareListRecordsResponse struct {
 	Result     []CloudflareRecord   `json:"result"`
 	Success    bool                 `json:"success"`
