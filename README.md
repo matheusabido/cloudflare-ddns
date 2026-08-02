@@ -2,12 +2,26 @@
 This project is not related to cloudflare at all. This is a **personal** project for something **I** personally need. Feel free to use it though.
 
 ## Configuration & Quick Setup
-The name of the file must be cloudflare-ddns.conf
+You can create the default config file running
+```
+./cloudflare-ddns --init
+```
 
 If you're on Windows, it expects the config to be in the same folder as the program (**./cloudflare-ddns.conf**).<br>
 If you're on Linux or Mac, it expects the config to be in **/etc/cloudflare-ddns.conf**
 
-### Example config
+All you have to do now is configure the API Token and Zone ID and run
+```
+./cloudflare-ddns
+```
+
+It will only run if your public ip has changed. To force an update, you can use the --force flag.
+
+```
+./cloudflare-ddns --force
+```
+
+### Default config
 ```conf
 api_token=[APITOKEN]
 zone_id=[ZONEID]
