@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/matheusabido/cloudflare-ddns/types"
+	"github.com/matheusabido/cloudflare-ddns/utils"
 )
 
 type CloudflareClient struct {
@@ -50,7 +51,18 @@ func (c *CloudflareClient) UpdateRecords() error {
 
 	startUpdate := time.Now()
 	fmt.Println("Updating cloudflare...")
+	ipv4Active := utils.IsActive(c.config.LastIPv4)
+	ipv6Active := utils.IsActive(c.config.LastIPv6)
 	for _, record := range c.config.Records {
+		if !ipv4Active && record.Type == types.RecordTypeA {
+			fmt.Printf("Skipping %s %s because IPv4 is not active\n", record.Type, record.Name)
+			continue
+		}
+
+		if !ipv6Active && record.Type == types.RecordTypeAAAA {
+			fmt.Printf("Skipping %s %s because IPv6 is not active\n", record.Type, record.Name)
+			continue
+		}
 		startConflict := time.Now()
 		fmt.Printf("Checking for conflicts for %s %s...\n", record.Type, record.Name)
 
