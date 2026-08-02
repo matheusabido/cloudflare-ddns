@@ -13,7 +13,17 @@ import (
 
 func main() {
 	forceUpdate := flag.Bool("force", false, "Forces update regardless of the ip having changed")
+	init := flag.Bool("init", false, "Creates the default configuration file")
 	flag.Parse()
+
+	if *init {
+		fmt.Println("Creating the default config file.")
+		if err := config.WriteDefaultConfigFile(); err != nil {
+			log.Panicf("Error creating default config file: %v", err)
+		}
+		fmt.Println("Default config created.")
+		return
+	}
 
 	start := time.Now()
 	lines := config.ReadConfigFile()
