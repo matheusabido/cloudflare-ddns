@@ -54,7 +54,7 @@ func ParseConfig(lines []string) (*types.CloudflareDDNSConfig, []error) {
 func ParseRecord(line string) (*types.CloudflareDDNSRecord, error) {
 	parts := strings.Split(line, ",")
 	if len(parts) < 3 {
-		return nil, fmt.Errorf("invalid record line: %s. Incomplete record config. Use: record=type,name,value,ttl?,proxied?", line)
+		return nil, fmt.Errorf("invalid record line: %s. Incomplete record config. Use: record=type,name,value,proxied?,ttl?", line)
 	}
 
 	recordType := types.CloudflareDDNSRecordType(parts[0])
