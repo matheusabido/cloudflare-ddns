@@ -15,10 +15,9 @@ import (
 )
 
 type CloudflareClient struct {
-	config   *types.CloudflareDDNSConfig
-	client   *http.Client
-	baseURL  string
-	zoneName string
+	config  *types.CloudflareDDNSConfig
+	client  *http.Client
+	baseURL string
 }
 
 func NewCloudflareClient(config *types.CloudflareDDNSConfig) *CloudflareClient {
@@ -52,7 +51,6 @@ func (c *CloudflareClient) UpdateRecords() error {
 		}
 		return fmt.Errorf("could not get cloudflare zone details. Response: %v", string(zoneBytes))
 	}
-	c.zoneName = zoneDetails.Result.Name
 	fmt.Printf("Fetched cloudflare zone details in %s\n", time.Since(startDetails))
 
 	startRecords := time.Now()
@@ -242,7 +240,7 @@ func (c *CloudflareClient) OverwriteRecord(equivalentRecord *types.CloudflareRec
 	recordValue = strings.ReplaceAll(recordValue, "{public_ipv4}", c.config.LastIPv4)
 	recordValue = strings.ReplaceAll(recordValue, "{public_ipv6}", c.config.LastIPv6)
 
-	if equivalentRecord.Content == record.ParseName(c.zoneName) && equivalentRecord.Proxied == record.Proxied && equivalentRecord.TTL == record.TTL.GetValue() {
+	if equivalentRecord.Content == recordValue && equivalentRecord.Proxied == record.Proxied && equivalentRecord.TTL == record.TTL.GetValue() {
 		fmt.Printf("No changes detected for %s %s. Skipping update.\n", record.Type, record.Name)
 		return nil
 	}
