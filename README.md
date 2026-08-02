@@ -1,5 +1,7 @@
 # Cloudflare DDNS
-This project is not related to cloudflare at all. This is a **personal** project for something **I** personally need. Feel free to use it though.
+*This project is not related to Cloudflare at all. This is a **personal** project for something **I** personally need.*
+
+Cloudflare DDNS is a **light-weight, no dependencies** solution to automatically **create and update** DNS records on Cloudflare according to your configurations. By default, **it will only run if your public ip has changed**, although **you can force it to run anyway** by using the --force flag.
 
 ## Configuration & Quick Setup
 You can create the default config file running
