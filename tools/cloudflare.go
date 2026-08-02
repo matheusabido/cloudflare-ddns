@@ -15,9 +15,10 @@ import (
 )
 
 type CloudflareClient struct {
-	config  *types.CloudflareDDNSConfig
-	client  *http.Client
-	baseURL string
+	config   *types.CloudflareDDNSConfig
+	client   *http.Client
+	baseURL  string
+	zoneName string
 }
 
 func NewCloudflareClient(config *types.CloudflareDDNSConfig) *CloudflareClient {
@@ -36,18 +37,30 @@ func NewCloudflareClient(config *types.CloudflareDDNSConfig) *CloudflareClient {
 // Returns an error if the update fails.
 func (c *CloudflareClient) UpdateRecords() error {
 	start := time.Now()
-	recordsList, err := c.ListRecords()
-	if err != nil {
-		return err
-	}
-	fmt.Printf("Listed cloudflare records in %s\n", time.Since(start))
 
+	fmt.Println("Fetching zone details...")
 	startDetails := time.Now()
 	zoneDetails, err := c.GetZoneDetails()
 	if err != nil {
 		return err
 	}
+
+	if !zoneDetails.Success {
+		zoneBytes, err := json.Marshal(zoneDetails)
+		if err != nil {
+			return fmt.Errorf("could not get cloudflare zone details. Could not marshal response: %v", err)
+		}
+		return fmt.Errorf("could not get cloudflare zone details. Response: %v", string(zoneBytes))
+	}
+	c.zoneName = zoneDetails.Result.Name
 	fmt.Printf("Fetched cloudflare zone details in %s\n", time.Since(startDetails))
+
+	startRecords := time.Now()
+	recordsList, err := c.ListRecords()
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Listed cloudflare records in %s\n", time.Since(startRecords))
 
 	startUpdate := time.Now()
 	fmt.Println("Updating cloudflare...")
@@ -67,14 +80,14 @@ func (c *CloudflareClient) UpdateRecords() error {
 		fmt.Printf("Checking for conflicts for %s %s...\n", record.Type, record.Name)
 
 		conflictiveTypes := types.ConflictiveTypes[record.Type]
-		equivalentId := ""
+		var equivalentRecord *types.CloudflareRecord = nil
 		hasConflict := false
 
 		recordName := record.ParseName(zoneDetails.Result.Name)
 		for _, cfRecord := range recordsList.Result {
 			isEquivalent := recordName == cfRecord.Name && record.Type == types.CloudflareDDNSRecordType(cfRecord.Type)
 			if isEquivalent {
-				equivalentId = cfRecord.ID
+				equivalentRecord = &cfRecord
 				continue
 			}
 
@@ -92,8 +105,8 @@ func (c *CloudflareClient) UpdateRecords() error {
 		}
 
 		startRecord := time.Now()
-		if equivalentId != "" {
-			if err := c.OverwriteRecord(equivalentId, record); err != nil {
+		if equivalentRecord != nil {
+			if err := c.OverwriteRecord(equivalentRecord, record); err != nil {
 				return err
 			}
 			fmt.Printf("Overwrote %s %s in %s\n", record.Type, record.Name, time.Since(startRecord))
@@ -105,6 +118,7 @@ func (c *CloudflareClient) UpdateRecords() error {
 		}
 	}
 	fmt.Printf("Cloudflare update done in %s\n", time.Since(startUpdate))
+	fmt.Printf("All Cloudflare interactions done in %s\n", time.Since(start))
 	return nil
 }
 
@@ -223,10 +237,16 @@ func (c *CloudflareClient) CreateRecord(record *types.CloudflareDDNSRecord) erro
 
 // Updates an existing DNS record on Cloudflare with the provided ID and CloudflareDDNSRecord.
 // Returns an error if the update fails.
-func (c *CloudflareClient) OverwriteRecord(id string, record *types.CloudflareDDNSRecord) error {
+func (c *CloudflareClient) OverwriteRecord(equivalentRecord *types.CloudflareRecord, record *types.CloudflareDDNSRecord) error {
 	recordValue := strings.TrimSpace(record.Value)
 	recordValue = strings.ReplaceAll(recordValue, "{public_ipv4}", c.config.LastIPv4)
 	recordValue = strings.ReplaceAll(recordValue, "{public_ipv6}", c.config.LastIPv6)
+
+	if equivalentRecord.Content == record.ParseName(c.zoneName) && equivalentRecord.Proxied == record.Proxied && equivalentRecord.TTL == record.TTL.GetValue() {
+		fmt.Printf("No changes detected for %s %s. Skipping update.\n", record.Type, record.Name)
+		return nil
+	}
+
 	body := map[string]any{
 		"name":    strings.TrimSpace(record.Name),
 		"ttl":     record.TTL.GetValue(),
@@ -241,7 +261,7 @@ func (c *CloudflareClient) OverwriteRecord(id string, record *types.CloudflareDD
 	}
 
 	buffer := bytes.NewBuffer(bodyBytes)
-	request, err := http.NewRequest("PUT", c.baseURL+"/dns_records/"+id, buffer)
+	request, err := http.NewRequest("PUT", c.baseURL+"/dns_records/"+equivalentRecord.ID, buffer)
 
 	request.Header.Set("Authorization", "Bearer "+c.config.APIToken)
 

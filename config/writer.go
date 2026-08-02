@@ -80,7 +80,8 @@ last_ipv6=none
 record=A,ddns,{public_ipv4}
 
 # In this example below, proxy is disabled
-#record=A,ddns,{public_ipv4},false`
+#record=A,ddns,{public_ipv4},false
+`
 
 	configurationPath := GetConfigPath()
 	err := os.WriteFile(configurationPath, []byte(defaultConfigContent), 0640)
